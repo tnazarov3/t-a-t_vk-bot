@@ -13,7 +13,6 @@ key_start = json.dumps(key_start, ensure_ascii=False).encode("UTF-8")
 key_start = str(key_start.decode("UTF-8"))
 
 key_stop = {
-    "one_time": True,
     "buttons": [
         [
             {"action": {

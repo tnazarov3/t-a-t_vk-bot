@@ -37,8 +37,6 @@ cur = conn.cursor()
 registration_mode = CHAT_MODE = 0
 current_bot_txt_img = ['', '']
 
-a = registration_mode * 2
-
 
 async def upload_photo(photo2up):
     photo2up = f'../user_profile_photos/{photo2up}.jpg'
@@ -236,7 +234,6 @@ async def handler(dp: Dispatcher):
         conn.reset_session()
         cur.execute(f"SELECT * FROM `profiles` WHERE `platform`='vk' AND `platform_id`={user_id}")
         profile = cur.fetchone()
-        print(profile)
         profile_name, photo_name, profile_age, profile_gender, profile_description, profile_city = [profile[i] for i in
                                                                                                     (3, 4, 5, 6, 7, 8)]
 
@@ -252,7 +249,6 @@ async def handler(dp: Dispatcher):
         await edit_msg(keys=await main_menu_create(user_id))
 
     elif callback in ['ch_name', 'ch_age', 'ch_city', 'ch_desc', 'ch_photo', 'profile_empty_callback']:
-
         global profile_kb
 
         if callback == 'profile_empty_callback':
@@ -301,6 +297,7 @@ async def handler(dp: Dispatcher):
 
     elif callback == 'save_profile':
         global profile_existing
+        print(1)
 
         if profile_existing == 1:
             cur.execute(
@@ -308,6 +305,7 @@ async def handler(dp: Dispatcher):
                 f"`gender` = '{profile_gender}', `description` = '{profile_description}', `city` = '{profile_city}' "
                 f"WHERE `platform` = 'vk' AND `platform_id` = {user_id}")
             conn.commit()
+            print(21)
         elif profile_existing == 0:
             cur.execute(
                 f"INSERT INTO `profiles` (`platform`,`platform_id`,`name`,`photo`,`age`,`gender`,`description`,`city`) "
@@ -315,11 +313,14 @@ async def handler(dp: Dispatcher):
                 f"'{profile_description}', '{profile_city}')"
             )
             conn.commit()
+            print(22)
 
         registration_mode = 0
         current_bot_txt_img = ['Профиль сохранён', 'media']
-        await dp.send_message(text=current_bot_txt_img[0], attachment=await upload_photo(current_bot_txt_img[1]),
-                              keyboard=await main_menu_create(user_id))
+        await edit_msg(keys=await main_menu_create(user_id))
+        # await dp.send_message(text=current_bot_txt_img[0], attachment=await upload_photo(current_bot_txt_img[1]),
+        #                       keyboard=await main_menu_create(user_id))
+        print(3)
 
 # ======================================================================================================================
 # ==========================================================================================================Предпочтения
@@ -378,7 +379,7 @@ async def handler(dp: Dispatcher):
 
                 age_dict = {'0': '= `age`', '1': '> 17 AND `age` < 25', '2': '> 24 AND `age` < 35', '3': '> 35'}
                 [pref_age, pref_gender, city_matter, city, user_fid] = cur.fetchone()
-                city_dict = {'0': '`city`', '1': city}
+                city_dict = {'0': '`city`', '1': f"'{city}'"}
 
                 if callback == 'roll_profiles':
                     profile_offset = 0
@@ -421,8 +422,8 @@ async def handler(dp: Dispatcher):
             elif callback == 'select_profile':
                 CHAT_MODE = 1
                 await edit_msg(keys=key_stop)
-                await asyncio.sleep(0.5)
-                await dp.send_message(text='Вы вошли в режим переписки, что бы выйти нажмите stop')
+                await bot.execute("messages.send", peer_id=user_id,
+                                  message='Вы вошли в режим переписки, что бы выйти нажмите stop', random_id=0)
 
                 stop_thread = False
                 background_check_db = Thread(await check_new_msgs_current_chat(user_id, chat_member_id))
@@ -505,25 +506,26 @@ async def main_menu_create(user_id):
 
         try:
             cur.execute(
-                f"SELECT COUNT(`db_id`) FROM `msgs` WHERE (`platform_1` = 'vk' AND `user1_id` = {user_id}) "
+                f"SELECT `db_id` FROM `msgs` WHERE (`platform_1` = 'vk' AND `user1_id` = {user_id}) "
                 f"OR (`platform_2` = 'vk' AND `user2_id` = {user_id})")
-            cur.fetchall()
+            a = cur.fetchall()
 
-            try:
-                conn.reset_session()
-                cur.execute(f"SELECT COUNT(`db_id`) FROM `msgs` "
-                            f"WHERE `platform_2` = 'vk' AND `user2_id` = {user_id} AND `processed` = 0")
-                new_msgs_count = int(cur.fetchone()[0])
-            except Exception as err:
-                print('new msgs count\n', err)
-                new_msgs_count = 0
+            if a != []:
+                try:
+                    conn.reset_session()
+                    cur.execute(f"SELECT COUNT(`db_id`) FROM `msgs` "
+                                f"WHERE `platform_2` = 'vk' AND `user2_id` = {user_id} AND `processed` = 0")
+                    new_msgs_count = int(cur.fetchone()[0])
+                except Exception as err:
+                    print('new msgs count\n', err)
+                    new_msgs_count = 0
 
-            new_msgs_count = f' ({new_msgs_count})' if new_msgs_count != 0 else ''
-            inline_main_menu['buttons'].append([
-                {"action": {
-                    "type": "callback", "payload": {'type': 'roll_chats'},
-                    "label": f"Чаты{new_msgs_count}"}, "color": "primary"}
-            ])
+                new_msgs_count = f' ({new_msgs_count})' if new_msgs_count != 0 else ''
+                inline_main_menu['buttons'].append([
+                    {"action": {
+                        "type": "callback", "payload": {'type': 'roll_chats'},
+                        "label": f"Чаты{new_msgs_count}"}, "color": "primary"}
+                ])
 
         except Exception as err:
             print('main menu chats existing\n', err)
