@@ -603,6 +603,12 @@ async def check_new_msgs_current_chat(user_id, chat_member) -> None:
         if stop_thread:
             break
 
+print('ready')
 
-if __name__ == "__main__":
-    run_polling(bot)
+while True:
+    try:
+        if __name__ == "__main__":
+            run_polling(bot)
+    except:
+        pass
+    asyncio.sleep(5)
