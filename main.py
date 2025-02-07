@@ -603,7 +603,7 @@ async def check_new_msgs_current_chat(user_id, chat_member) -> None:
         if stop_thread:
             break
 
-print('ready')
+print('Ready')
 
 while True:
     try:
